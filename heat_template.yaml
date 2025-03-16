@@ -1,0 +1,74 @@
+heat_template_version: 2021-04-16
+description: "creating VM"
+resources: 
+  my_security_group: 
+    type: "OS::Neutron::SecurityGroup"
+    properties: 
+      rules: 
+        - ethertype: IPv4
+          protocol: tcp
+          remote_mode: remote_ip_prefix
+          port_range_min: 22
+          port_range_max: 22
+          remote_ip_prefix: "0.0.0.0/0"
+        - ethertype: IPv4
+          protocol: tcp
+          remote_mode: remote_ip_prefix
+          port_range_min: 8080
+          port_range_max: 8080
+          remote_ip_prefix: "0.0.0.0/0"
+      description: "My security group for app instance"
+      
+  my_server: 
+    type: "OS::Nova::Server"
+    properties: 
+      name: "turbina-docker"
+      flavor: "m1.small"
+      image: "d608627a-ef62-452d-8a74-1c307cbe276d"
+      availability_zone: nova
+      key_name: "2025-turbina"
+      networks:
+      - port: { get_resource: my_port }
+    depends_on: 
+      - my_security_group
+
+  my_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: "17eae9b6-2168-4a07-a0d3-66d5ad2a9f0e" # students.net ID
+      security_groups:
+        - default
+        - { get_resource: my_security_group }
+
+  quizbot_config:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      config: |
+        #!/bin/bash -xe
+        apt-get update
+        
+        apt-get install -y openjdk-21-jdk docker.io docker-compose git maven
+        
+        # Настройка доступа к Docker для пользователя (опционально, если требуется)
+        # usermod -aG docker ubuntu
+        
+        git clone https://github.com/guiqiqi/PolytechQuizbot.git /opt/quizbot
+        cd /opt/quizbot
+        
+        cat > src/main/resources/config.properties <<EOF
+        database.driver = com.mysql.cj.jdbc.Driver
+        database.url = jdbc:mysql://localhost:3306/quizbot
+        database.username = root
+        database.password = toor
+        telegram.bot.name = telegram-quizbot
+        telegram.bot.token = 12345:ABCDE
+        EOF
+
+        if [ -f docker-compose.yml ]; then
+          docker-compose up -d
+        else
+          docker build -t quizbot .
+          docker run -d -v $(pwd)/src/main/resources/config.properties:/app/target/classes/config.properties quizbot
+        fi
+  
