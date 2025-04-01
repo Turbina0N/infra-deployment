@@ -41,6 +41,7 @@ resources:
             echo -e "\n\n\ntoor\ntoor\ny\ny\ny\ny" | sudo mysql_secure_installation
             sudo systemctl restart mariadb
             sudo mysql -u root -ptoor -e "CREATE DATABASE quizbot;"
+          params: {}
     depends_on: 
       - my_security_group
 
