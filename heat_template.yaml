@@ -30,15 +30,17 @@ resources:
       networks:
       - port: { get_resource: my_port }
       user_data_format: RAW
-      user_data: |
-      #!/bin/bash
-      sudo apt-get update -y
-      sudo apt-get install -y mariadb-server openjdk-21-jdk
-      sudo systemctl start mariadb
-      echo "Setting up MariaDB with root password 'toor'"
-      echo -e "\n\n\ntoor\ntoor\ny\ny\ny\ny" | sudo mysql_secure_installation
-      sudo systemctl restart mariadb
-      sudo mysql -u root -ptoor -e "CREATE DATABASE quizbot;"
+      user_data:
+        str_replace:
+          template: |
+            #!/bin/bash
+            sudo apt-get update -y
+            sudo apt-get install -y mariadb-server openjdk-21-jdk
+            sudo systemctl start mariadb
+            echo "Setting up MariaDB with root password 'toor'"
+            echo -e "\n\n\ntoor\ntoor\ny\ny\ny\ny" | sudo mysql_secure_installation
+            sudo systemctl restart mariadb
+            sudo mysql -u root -ptoor -e "CREATE DATABASE quizbot;"
     depends_on: 
       - my_security_group
 
